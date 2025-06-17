@@ -3,13 +3,31 @@ import { useEffect, useState } from 'react';
 import { BsSun, BsMoon } from 'react-icons/bs';
 
 export default function LightDarkToggle() {
-  const [dark, setDark] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Only run on client
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
+    setMounted(true);
+    const stored = localStorage.getItem('theme');
+    const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDark(stored === 'dark' || (!stored && prefers));
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark, mounted]);
+
+  if (!mounted) return null;
   return (
-    <button className="p-2" onClick={() => setDark(!dark)}>
-      {dark ? <BsSun /> : <BsMoon />}
+    <button
+      onClick={() => setIsDark((prev) => !prev)}
+      className="p-2 text-2xl"
+      aria-label="Toggle Dark Mode"
+    >
+      {isDark ? <BsSun /> : <BsMoon />}
     </button>
   );
 }
