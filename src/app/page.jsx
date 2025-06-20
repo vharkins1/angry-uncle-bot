@@ -1,7 +1,7 @@
 // src/app/page.jsx
-import ChatBox from '@/components/ChatBox';
-import LightDarkToggle from '@/components/LightDarkToggle';
-import { Analytics } from '@vercel/analytics/react';
+import ChatBox from "@/components/GroupChat";
+import LightDarkToggle from "@/components/LightDarkToggle";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function Home() {
   return (

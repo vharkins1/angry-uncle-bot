@@ -5,7 +5,7 @@ const buckets = new Map();
  * Simple token-bucket throttle: limit requests per IP per time window.
  * @returns {boolean} true if request is allowed, false if rate-limited
  */
-export default function rateLimit(ip, limit = 10, windowMs = 60_000) {
+export default function rateLimit(ip, limit = 100, windowMs = 60_000) {
   const now = Date.now();
   const bucket = buckets.get(ip) || { n: 0, ts: now };
 

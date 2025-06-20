@@ -9,11 +9,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className="
-          bg-white text-black
+        className="bg-white text-black
           dark:bg-gray-900 dark:text-white
-          transition-colors duration-300
-        "
+          transition-colors duration-500"
       >
         {children}
       </body>
