@@ -1,5 +1,6 @@
 // src/components/GroupHeader.jsx
 import { BsThreeDots } from 'react-icons/bs';
+import '../app/globals.css';
 
 export default function GroupHeader({
   title = 'Angry Uncle Group Chat',

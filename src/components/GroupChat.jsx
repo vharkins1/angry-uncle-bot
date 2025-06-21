@@ -7,6 +7,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import GroupHeader from './GroupHeader';
+import '../app/globals.css';
 
 
 /**
