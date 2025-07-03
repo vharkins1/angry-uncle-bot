@@ -6,6 +6,7 @@
 
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { IoIosArrowUp } from 'react-icons/io';
 import GroupHeader from './GroupHeader';
 import '../app/globals.css';
 
@@ -27,6 +28,16 @@ const AVATAR = {
   uncle: '😠',
   coach: '🧑‍🏫'
 };
+
+/**
+ * Re‑usable gray chat bubble style (bots & typing indicator).
+ */
+const BOT_BUBBLE_STYLE =
+  'bg-gray-200 text-gray-900 rounded-[20px] rounded-bl-none px-6 py-3 ' +
+  'before:absolute before:bottom-0 before:-left-2 ' +
+  'before:border-t-[12px] before:border-t-transparent ' +
+  'before:border-r-[12px] before:border-r-gray-200 ' +
+  'before:border-b-[12px] before:border-b-transparent';
 
 /**
  * Sanitises an arbitrary value into a valid {role, content} message or null.
@@ -59,14 +70,19 @@ function flatten(arr) {
 function Bubble({ role, content, onSelect }) {
   const isUser = role === 'user';
 
+  // const base =
+  //   'relative inline-block max-w-xs px-4 py-2 text-sm leading-snug shadow';
+
   const base =
-    'relative inline-block max-w-xs px-4 py-2 text-sm leading-snug shadow';
+  'relative inline-block max-w-xs px-4 py-2 text-base md:text-lg leading-snug shadow';
 
   // iMessage tails via ::before pseudo
   const userBubble =
-    'bg-[#007aff] text-white rounded-2xl rounded-br-md before:absolute before:bottom-0 before:-right-1 before:border-t-8 before:border-t-transparent before:border-l-[10px] before:border-l-[#007aff] before:border-b-8 before:border-b-transparent';
-  const botBubble =
-    'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-50 rounded-2xl rounded-bl-md before:absolute before:bottom-0 before:-left-1 before:border-t-8 before:border-t-transparent before:border-r-[10px] before:border-r-gray-200 dark:before:border-r-gray-700 before:border-b-8 before:border-b-transparent';
+    'bg-[#4da6ff] text-white rounded-[20px] rounded-br-none px-6 py-3 \
+    before:absolute before:bottom-0 before:-right-2 \
+    before:border-t-[12px] before:border-t-transparent \
+    before:border-l-[12px] before:border-l-[#4da6ff] \
+    before:border-b-[12px] before:border-b-transparent';
 
   // prepend label for bots
   const label = !isUser ? (
@@ -80,7 +96,7 @@ function Bubble({ role, content, onSelect }) {
       <div className="max-w-xs">
         {label}
         <button
-          className={`${base} ${isUser ? userBubble : botBubble}`}
+          className={`${base} ${isUser ? userBubble : BOT_BUBBLE_STYLE}`}
           onClick={() => onSelect?.({ role, content })}
           aria-label="Select message"
         >
@@ -92,6 +108,19 @@ function Bubble({ role, content, onSelect }) {
   );
 }
 
+function TypingBubble() {
+  return (
+    <div className="my-1 flex justify-start">
+      <div className="max-w-xs">
+        <div className={`${BOT_BUBBLE_STYLE} flex gap-1 w-16 h-8 items-center`}>
+          <span className="animate-pulse">•</span>
+          <span className="animate-pulse delay-150">•</span>
+          <span className="animate-pulse delay-300">•</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 
 /** Simple topic‑picker overlay shown on first load */
@@ -121,6 +150,7 @@ export default function GroupChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [topic, setTopic] = useState(null); // null until chosen
+  const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
     // how many user messages so far?
   const userCount  = messages.filter(m => m.role === 'user').length;
@@ -131,6 +161,7 @@ export default function GroupChat() {
     localStorage.removeItem('aub_chat');
     setMessages([]);
     setTopic(null);          // optional: show topic picker again
+    setLoading(false);
   }
 
   // Load history ONCE on mount ── with migration for any nested‑array bug.
@@ -176,6 +207,7 @@ export default function GroupChat() {
 
     const next = [...messages, { role: 'user', content: input }];
     setMessages(next);
+    setLoading(true);
     setInput('');
 
     try {
@@ -197,14 +229,17 @@ export default function GroupChat() {
         throw new Error('Empty reply from server');
 
       setMessages((m) => [...m, ...incoming]);
+      setLoading(false);
     } catch (err) {
       console.error('[GroupChat] sendMessage failed:', err);
+      setLoading(false);
       alert(err.message || 'Chat error—see console');
     }
   }
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="relative flex h-full justify-center bg-white">
+        <div className="flex flex-col w-full max-w-4xl">
       {!topic && <TopicPicker onPick={setTopic} />}
 
       <GroupHeader remaining={remaining} onReset={resetChat} />
@@ -219,28 +254,30 @@ export default function GroupChat() {
             onSelect={(msg) => console.log('Selected →', msg)}
           />
         ))}
+        {loading && <TypingBubble />}
         <div ref={bottomRef} />
       </div>
 
       {/* Input bar */}
       <form
         onSubmit={sendMessage}
-        className="flex gap-2 border-t bg-white p-3 dark:bg-gray-900"
+        className="sticky bottom-0 z-20 mx-4 my-2 flex items-end gap-2 px-3 py-2"
       >
         <input
-          className="flex-grow rounded-full border px-4 py-2 text-sm dark:bg-gray-800"
+          className="flex-grow rounded-full bg-gray-600 border border-gray-300 px-4 py-2 text-base md:text-lg dark:bg-gray-600 dark:border-gray-600 focus:outline-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={topic ? 'iMessage…' : 'Pick a topic first'}
+          placeholder={topic ? 'message…' : 'Pick a topic first'}
           disabled={!topic}
         />
         <button
-          className="rounded-full bg-[#007aff] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-          disabled={!topic}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-[#007aff] text-white disabled:bg-[#aad4ff] disabled:opacity-60"
+          disabled={!topic || !input.trim()}
         >
-          Send
+          <IoIosArrowUp className="text-xl" />
         </button>
       </form>
+        </div>
     </div>
   );
 }

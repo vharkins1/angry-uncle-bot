@@ -9,8 +9,9 @@ export default function GroupHeader({
 }) {
   return (
     <header
-      className="sticky top-0 z-20 flex items-center justify-between gap-3
-                 border-b bg-white/80 backdrop-blur dark:bg-gray-900/80 p-4"
+      className="sticky top-0 z-20 mx-4 my-2 flex items-center justify-between gap-3
+                 rounded-full border bg-white/80 backdrop-blur p-4
+                 dark:bg-gray-800/80"
     >
       {/* avatar stack */}
       <div className="relative h-8 w-8">
