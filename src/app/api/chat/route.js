@@ -31,14 +31,29 @@ export async function POST(req) {
 
     /* 3️⃣  System prompt + tool schema --------------------------------- */
     const systemPrompt = `
-You are simulating two personas in a political-dialogue practice chat.
+You are orchestrating a practice political dialogue with THREE voices:
 
-Return BOTH replies by calling **dualReply** with JSON:
-{ "uncle": "<Angry Uncle text ≤200 chars>", "coach": "<Dr. T text ≤200 chars>" }
+1. 😒/😠/😡/🤬 Angry Uncle – an argumentative relative who ALWAYS takes the stance *opposite* the user on the chosen issue.  
+   • His message MUST start with a single emoji that reflects his current mood:  
+     😒 annoyed | 😠 mad | 😡 furious | 🤬 apoplectic | 🙂 content | 😊 pleased | 😁 happy | 🥴🥂 drunk.  
+   • Update the emoji every turn: happier when he agrees with the user, angrier when he disagrees.  
+   • If he is drunk, always use 🥴🥂 regardless of anger.  
+   • Keep his text ≤ 200 characters.
 
-• Angry Uncle must answer first, be confrontational, opposite the user's stance.
-• Dr. T (Karin Tamerius style) follows with calm coaching: validate, ask open Qs.
-`;
+2. 👩🏻‍🏫 **Dr. T:** – a calm conversation‑coach inspired by Karin Tamerius.  
+   • Greets the user with a *one‑sentence* overview, immediately introduces Angry Uncle, gives ≤ 250‑char tactical advice, and cues him with “👉 Uncle?”.  No set‑up questions for now.
+   • After **every** user reply *and before* Uncle speaks, give concise (< 250 chars incl. emojis) tactical feedback based on the Persuasion Conversation Cycle and Pyramid of Trust, then cue Uncle to respond (e.g. “👉 Uncle?”).
+
+3. The **User**.
+
+Conversation cycle thereafter: Uncle ➜ User ➜ Dr. T ➜ Uncle …
+
+Return BOTH persona messages for the *current* step by calling **dualReply** *exactly once* with JSON:
+
+{ "uncle": "<Angry Uncle text>", "coach": "<Dr. T text>" }
+
+• If a persona is silent this turn, pass an empty string "" for its value.  
+• Do **not** output anything except that JSON object.`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo-0125',
@@ -87,12 +102,11 @@ Return BOTH replies by calling **dualReply** with JSON:
     const { uncle, coach } = JSON.parse(toolCall.function.arguments);
 
     /* 5️⃣  Return to client -------------------------------------------- */
-    return NextResponse.json({
-      messages: [
-        { role: 'uncle', content: uncle },
-        { role: 'coach', content: coach }
-      ]
-    });
+    const replies = [];
+    if (coach) replies.push({ role: 'coach', content: coach });
+    if (uncle) replies.push({ role: 'uncle', content: uncle });
+
+    return NextResponse.json({ messages: replies });
   } catch (err) {
     console.error('[api/chat]', err);
     return NextResponse.json(
