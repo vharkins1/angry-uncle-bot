@@ -161,6 +161,7 @@ export default function GroupChat() {
   const [loading, setLoading] = useState(false);
 
   const bottomRef = useRef(null);
+  const messagesWrapRef = useRef(null);     // container for messages – used to decide when to auto‑scroll
 
   /* Load history once */
   useEffect(() => {
@@ -174,10 +175,16 @@ export default function GroupChat() {
     if (savedTopic) setTopic(savedTopic);
   }, []);
 
-  /* Persist & auto‑scroll */
+  /* Persist & conditional auto‑scroll */
   useEffect(() => {
-    if (messages.length) {
-      localStorage.setItem('aub_chat', JSON.stringify(messages));
+    if (!messages.length) return;
+
+    // Persist chat history
+    localStorage.setItem('aub_chat', JSON.stringify(messages));
+
+    // Only scroll to bottom if content actually overflows the visible area
+    const wrap = messagesWrapRef.current;
+    if (wrap && wrap.scrollHeight > wrap.clientHeight + 20) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
@@ -277,7 +284,10 @@ export default function GroupChat() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 pt-12 pb-25">
+        <div
+            ref={messagesWrapRef}
+            className="flex-1 overflow-y-auto px-4 pt-12 pb-28"
+        >
           {messages.map((m, i) => (
             <Bubble key={i} role={m.role} content={m.content} />
           ))}

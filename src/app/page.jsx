@@ -16,7 +16,7 @@ const tiles = [
   { label: "Ready to Start Talking", href: "/chat", img: "/images/bkg-blue2.jpg", className: "h-52" },
   { label: "Join Smart", href: "https://www.joinsmart.org", external: true, img: "/images/bkg-red1.jpg", className: "h-52" },
   { label: "Resources", href: "https://www.joinsmart.org/resources/", img: "/images/bkg-red1.jpg", className: "h-52" },
-  { label: "Have Some Ideas Let Us Know", img: "/images/bkg-blue1.jpg", className: "h-52" },
+  { label: "Have Some Ideas Let Us Know", img: "/images/SmartPoliticsLogo.png", className: "h-52" },
   { label: "Coming Soon", img: "/images/bkg-blue2.jpg", className: "h-52" },
 ];
 
