@@ -9,8 +9,45 @@ import TopicPicker from './TopicPicker';
 import { IoIosArrowUp } from 'react-icons/io';
 
 
-const LIMIT = 5;
+const LIMIT = 20;
 //const WARN_THRESHOLDS = [50, 20, 10];
+
+
+function FeedbackPrompt({ onFeedback, onReset, onClose }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="relative bg-white text-black rounded-lg shadow-lg p-6 max-w-sm w-full">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-5 text-lg text-gray-500 hover:text-gray-800"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+
+        <h2 className="text-lg font-bold mb-4">Out of turns!</h2>
+        <p className="mb-6">Would you like to give feedback or reset the chat?</p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onReset}
+            className="rounded-md bg-gray-300 px-4 py-2 hover:brightness-85"
+          >
+            Reset Chat
+          </button>
+          <button
+            onClick={onFeedback}
+            className="rounded-md bg-[#fbb041] px-4 py-2 font-semibold text-black hover:brightness-85"
+          >
+            Give Feedback
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 export default function RevampGroupChat() {
     const [messages, setMessages] = useState([]);
@@ -19,6 +56,7 @@ export default function RevampGroupChat() {
     const [topic, setTopic] = useState('');
     const [serverRL, setServerRL] = useState({ limit: null, remaining: null, reset: null });
     const [locked, setLocked] = useState(false);
+    const [showPrompt, setShowPrompt] = useState(false);
 
     const scrollRef = useRef(null);
     const inputRef = useRef(null);
@@ -66,7 +104,7 @@ export default function RevampGroupChat() {
     async function sendMessage(e) {
     e.preventDefault();
     if (turns_remaining === 0) {
-      alert("Turn limit reached. Please reset the chat to start a new round.");
+      setShowPrompt(true);
       return;
     }
     if (!input.trim() || loading) return;
@@ -175,6 +213,22 @@ export default function RevampGroupChat() {
         setTopic(t);
         localStorage.setItem('aub_topic', t);
         }} />)}
+
+      {/* Out of Turns & Feedback Form */}
+      {showPrompt && (
+        <FeedbackPrompt
+          onFeedback={() => {
+            window.open("https://docs.google.com/forms/d/e/1FAIpQLSfHn2Ro_HqV9bGjQUhtBBSL7-ZySem_GbByV6B290MbncXStw/viewform", "_blank");
+            setShowPrompt(false);
+          }}
+          onReset={() => {
+            handleReset();
+            setShowPrompt(false);
+          }}
+          onClose={() => setShowPrompt(false)} // X button closes it
+        />
+      )}
+
       {/* Header */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 z-35 w-full max-w-[45rem] px-13 sm:px-10">
         <div className="flex items-center justify-between gap-3 rounded-b-lg bg-[rgba(255,255,255,0.08)] px-4 py-2.5 text-sm text-white shadow-lg shadow-black/30 backdrop-blur-md">
@@ -233,6 +287,18 @@ export default function RevampGroupChat() {
     <IoIosArrowUp className="text-xl text-black" />
    </button>
         </div>
+
+         <h5 className="text-center text-xs text-white/70 mb-2">
+    BETA —{' '}
+    <a
+      href="https://docs.google.com/forms/d/e/1FAIpQLSfHn2Ro_HqV9bGjQUhtBBSL7-ZySem_GbByV6B290MbncXStw/viewform"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline text-blue-400 hover:text-blue-300"
+    >
+      Give Feedback here
+    </a>
+  </h5>
         
         <div className="h-[env(safe-area-inset-bottom)]" />
       </form>

@@ -22,8 +22,9 @@ export default function RootLayout({ children }) {
       <body className="min-h-dvh bg-gray-900 text-gray-100 antialiased">
         <Navbar />
         {children}
+        <SpeedInsights />
       </body>
-      <SpeedInsights />
+      
     </html>
   );
 }
