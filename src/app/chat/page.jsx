@@ -1,5 +1,7 @@
-import GroupChat from "@/components/GroupChat";
+// src/app/chat/page.jsx
 
+import GroupChat from "@/components/GroupChat";
+import RevampGroupChat from "@/components/revampGroupChat";
 /**
  * Chat page – mounts the interactive GroupChat component.
  * GroupChat itself is a client component that uses hooks/web‑sockets,
@@ -14,8 +16,8 @@ export const metadata = {
 export default function ChatPage() {
   return (
         <>
-      <main className="flex min-h-screen flex-col">
-        <GroupChat />
+      <main className="flex flex-1 min-h-0 flex-col">
+        <RevampGroupChat/>
       </main>
     </>
   );

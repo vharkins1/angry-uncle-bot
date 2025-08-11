@@ -12,12 +12,12 @@ import PageShell from '../components/PageShell';
 ---------------------------------------------------------------- */
 const IMG = "/images/PeopleHugging.webp";
 const tiles = [
-  { label: "I’m New Here", href: "/about", img: "/images/bkg-blue1.jpg", className: "h-52" },
-  { label: "Ready to Start Talking", href: "/chat", img: "/images/bkg-blue2.jpg", className: "h-52" },
-  { label: "Join Smart", href: "https://www.joinsmart.org", external: true, img: "/images/bkg-red1.jpg", className: "h-52" },
-  { label: "Resources", href: "https://www.joinsmart.org/resources/", img: "/images/bkg-red1.jpg", className: "h-52" },
-  { label: "Have Some Ideas Let Us Know", img: "/images/SmartPoliticsLogo.png", className: "h-52" },
-  { label: "Coming Soon", img: "/images/bkg-blue2.jpg", className: "h-52" },
+  { label: "I’m New Here", href: "/about", img: "/images/bkg-blue1.jpg", className: "h-60" },
+  { label: "Ready to Start Talking", href: "/chat", img: "/images/bkg-blue2.jpg", className: "h-60" },
+  { label: "Join Smart", href: "https://www.joinsmart.org", external: true, img: "/images/SmartPoliticsLogo.png", className: "h-60" },
+  { label: "Resources", href: "https://www.joinsmart.org/resources/", img: "/images/bkg-red1.jpg", className: "h-75" },
+  { label: "Have Some Ideas Let Us Know", href: "https://docs.google.com/forms/d/e/1FAIpQLSfHn2Ro_HqV9bGjQUhtBBSL7-ZySem_GbByV6B290MbncXStw/viewform", img: "/images/Pattern-01-scaled.jpg", className: "h-75" },
+  { label: "Coming Soon", img: "/images/bkg-blue2.jpg", className: "h-75" },
 ];
 
 /* ------------------------------------------------------------ */
@@ -25,14 +25,14 @@ const tiles = [
 export default function Home() {
   return (
     <>
-      <PageShell className="py-12">
+      <PageShell className="py-20">
         <h1 className="mb-8 text-3xl font-bold tracking-tight text-white inline-block">
           Explore Angry Uncle Bot
           <span className="block h-1 w-16 bg-[#dd494f] mt-2 rounded"></span>
         </h1>
 
         {/* Responsive grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-14 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((t, i) => (
             <Tile key={i} {...t} index={i} />
           ))}

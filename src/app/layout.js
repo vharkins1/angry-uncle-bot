@@ -18,8 +18,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="h-full scroll-smooth\">
-      <body className="min-h-screen bg-gray-900 text-gray-100 antialiased">
+    <html lang="en" className="h-full scroll-smooth">
+      <body className="min-h-dvh bg-gray-900 text-gray-100 antialiased">
         <Navbar />
         {children}
       </body>

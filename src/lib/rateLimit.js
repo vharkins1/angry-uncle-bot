@@ -1,5 +1,13 @@
 // src/app/api/chat/route.js
 import rateLimit from "@/lib/rateLimit";
+import { kv } from '@vercel/kv';
+import { Ratelimit } from '@upstash/ratelimit';
+import { createClient } from "@vercel/kv";
+
+/**
+ * 50 messages per 24 h, keyed by visitorId (IP or cookie)
+ */
+
 
 export async function POST(req) {
   // simple IP key (works on Vercel, Node, local dev)
@@ -8,14 +16,12 @@ export async function POST(req) {
     req.headers.get("x-real-ip") ||
     "anonymous";
 
-  if (!rateLimit(ip, 20, 60_000)) {
+  if (!rateLimit(ip, 200, 60_000)) {
     return new Response(
       JSON.stringify({ error: "Rate limit exceeded. Please wait or reset the chat." }),
       { status: 429, headers: { "Content-Type": "application/json" } }
     );
   }
-
-  // ...rest of your POST handler code
 }
 
 // src/components/GroupChat.jsx

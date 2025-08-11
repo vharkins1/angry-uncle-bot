@@ -3,115 +3,154 @@
 // Next 15 (app router) – POST /api/chat
 // Returns { messages: [ {role:'uncle',content}, {role:'coach',content} ] }
 // ────────────────────────────────────────────────────────────
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
+import { limiter } from "@/lib/limit";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-/** Helper: flatten anything weird that slipped into history */
+/* --- helper to flatten chat history --- */
 const toFlatHistory = (arr = []) =>
-  arr
-    .flat(Infinity)
-    .filter(
-      m => m && typeof m === 'object' && !Array.isArray(m) && 'role' in m
-    );
+  arr.flat(Infinity).filter(
+    (m) => m && typeof m === "object" && !Array.isArray(m) && "role" in m
+  );
 
-/** POST handler */
+/* --- POST /api/chat --- */
 export async function POST(req) {
-  try {
-    /* 1️⃣  Input -------------------------------------------------------- */
-    const { messages = [], topic } = await req.json();
-    const history = toFlatHistory(messages);
+  /* 0️⃣  rate-limit --------------------------------------------------- */
+  const id =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "anonymous";
 
-    /* 2️⃣  Remap roles for OpenAI -------------------------------------- */
-    const forOpenAI = history.map(({ role, content }) => ({
-      role: role === 'user' ? 'user' : 'assistant',
-      content
-    }));
+  const { success, remaining, reset } = await limiter.limit(id);
 
-    /* 3️⃣  System prompt + tool schema --------------------------------- */
-    const systemPrompt = `
-You are orchestrating a practice political dialogue with THREE voices:
+  // helper so we don’t repeat the header object
+  const rateHeaders = {
+    "X-RateLimit-Limit": "200",
+    "X-RateLimit-Remaining": remaining,
+    "X-RateLimit-Reset": reset,
+  };
 
-1. 😒/😠/😡/🤬 Angry Uncle – an argumentative relative who ALWAYS takes the stance *opposite* the user on the chosen issue.  
-   • His message MUST start with a single emoji that reflects his current mood:  
-     😒 annoyed | 😠 mad | 😡 furious | 🤬 apoplectic | 🙂 content | 😊 pleased | 😁 happy | 🥴🥂 drunk.  
-   • Update the emoji every turn: happier when he agrees with the user, angrier when he disagrees.  
-   • If he is drunk, always use 🥴🥂 regardless of anger.  
-   • Keep his text ≤ 200 characters.
-
-2. 👩🏻‍🏫 **Dr. T:** – a calm conversation‑coach inspired by Karin Tamerius.  
-   • Greets the user with a *one‑sentence* overview, immediately introduces Angry Uncle, gives ≤ 250‑char tactical advice, and cues him with “👉 Uncle?”.  No set‑up questions for now.
-   • After **every** user reply *and before* Uncle speaks, give concise (< 250 chars incl. emojis) tactical feedback based on the Persuasion Conversation Cycle and Pyramid of Trust, then cue Uncle to respond (e.g. “👉 Uncle?”).
-
-3. The **User**.
-
-Conversation cycle thereafter: Uncle ➜ User ➜ Dr. T ➜ Uncle …
-
-Return BOTH persona messages for the *current* step by calling **dualReply** *exactly once* with JSON:
-
-{ "uncle": "<Angry Uncle text>", "coach": "<Dr. T text>" }
-
-• If a persona is silent this turn, pass an empty string "" for its value.  
-• Do **not** output anything except that JSON object.`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-0125',
-      temperature: 0.7,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...(topic
-          ? [
-              {
-                role: 'system',
-                content: `Current topic is: ${topic}. Use it in replies.`
-              }
-            ]
-          : []),
-        ...forOpenAI
-      ],
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: 'dualReply',
-            description: 'Return replies for both personas',
-            parameters: {
-              type: 'object',
-              properties: {
-                uncle: { type: 'string', description: 'Angry Uncle reply' },
-                coach: { type: 'string', description: 'Dr. T reply' }
-              },
-              required: ['uncle', 'coach']
-            }
-          }
-        }
-      ],
-      // ask the model to *use* that function every turn
-      tool_choice: { type: 'function', function: { name: 'dualReply' } }
-    });
-
-    /* 4️⃣  Extract arguments (SDK 4.x has tool_calls array) ------------ */
-    const choice = completion.choices[0];
-    const toolCall =
-      choice.message.tool_calls?.[0] ?? choice.message.function_call; // fallback for SDK 0.x
-
-    if (!toolCall)
-      throw new Error('Model did not call dualReply as expected.');
-
-    const { uncle, coach } = JSON.parse(toolCall.function.arguments);
-
-    /* 5️⃣  Return to client -------------------------------------------- */
-    const replies = [];
-    if (coach) replies.push({ role: 'coach', content: coach });
-    if (uncle) replies.push({ role: 'uncle', content: uncle });
-
-    return NextResponse.json({ messages: replies });
-  } catch (err) {
-    console.error('[api/chat]', err);
+  if (!success) {
     return NextResponse.json(
-      { error: err.message || 'Internal error' },
-      { status: 500 }
+      { error: "You hit the message limit. ⏳ Come back in 24 h." },
+      { status: 429, headers: rateHeaders }
     );
   }
+
+  /* 1️⃣  parse body --------------------------------------------------- */
+  const { messages = [], topic } = await req.json();
+  const history = toFlatHistory(messages);
+
+  /* 2️⃣  map roles for OpenAI ---------------------------------------- */
+  const forOpenAI = history.map(({ role, content }) => ({
+    role: role === "user" ? "user" : "assistant",
+    content,
+  }));
+
+  /* 3️⃣  build system prompt & call OpenAI --------------------------- */
+  const systemPrompt = `
+You are running a dual-persona assistant.
+
+CHARACTERS
+• 😠 **Angry Uncle** — always takes the opposite political stance from the user.
+• 👩🏻‍🏫 **Dr. T** — dialogue coach (inspired by Karin Tamerius).
+
+CHAT RULES
+1. Orientation
+   – Dr. T greets user, explains format in ≤2 lines, then asks:
+     1) “What issue do you want to discuss?”
+     2) “What’s your position on it?”
+     3) “How angry do you want Angry Uncle today? (annoyed, mad, furious, apoplectic)”
+     4) “Is he drunk or sober?”
+   – Wait for answers before moving on.
+
+2. Dynamic Setup
+   – Categorize user position: conservative / liberal / moderate.
+   – Set Angry Uncle’s stance to the opposite side.
+   – Choose starting emoji:
+     😒 annoyed | 😠 mad | 😡 furious | 🤬 apoplectic
+     Add 🥴🥂 if drunk.
+
+3. Turn Cycle (loop for every user reply)
+   a) Angry Uncle speaks first, prefixed with his current emoji.
+   b) User replies.
+   c) Dr. T (👩🏻‍🏫) gives ≤250-char coaching on the user’s *last* message, then cues Uncle.
+   d) Adjust Uncle’s emoji:
+        • If he feels agreement ➜ 🙂😊😁 (happier)
+        • If disagreement rises ➜ 😠😡🤬 (angrier)
+   e) Continue loop.
+
+4. Output format (function call **dualReply**):
+{
+  "uncle": "<emoji> ...",
+  "coach": "..."
+}
+
+Stay within the function schema; no extra keys.
+`;
+
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.7,
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...(topic
+        ? [{ role: "system", content: `Current topic is: ${topic}.` }]
+        : []),
+      ...forOpenAI,
+    ],
+    tools: [
+      {
+        type: "function",
+        function: {
+          name: "dualReply",
+          description: "Return replies for both personas",
+          parameters: {
+            type: "object",
+            properties: {
+              uncle: { type: "string" },
+              coach: { type: "string" },
+            },
+            required: ["uncle", "coach"],
+          },
+        },
+      },
+    ],
+    tool_choice: { type: "function", function: { name: "dualReply" } },
+  });
+
+  /* 4️⃣  extract tool call ------------------------------------------- */
+  const call =
+    completion.choices[0].message.tool_calls?.[0] ??
+    completion.choices[0].message.function_call;
+
+  if (!call) throw new Error("Model did not call dualReply");
+
+  const { uncle, coach } = JSON.parse(call.function.arguments);
+
+  /* 5️⃣  send back to client ----------------------------------------- */
+  const replies = [];
+  if (coach) replies.push({ role: "coach", content: coach });
+  if (uncle) replies.push({ role: "uncle", content: uncle });
+
+  return NextResponse.json({ messages: replies }, { headers: rateHeaders });
+}
+
+
+export async function GET() {
+  // Lightweight info endpoint; does not consume a token.
+  return NextResponse.json({ limit: 200 });
+}
+
+export async function HEAD() {
+  // Return static limit header only; do not call the limiter so we don't consume.
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "X-RateLimit-Limit": "200",
+    },
+  });
 }

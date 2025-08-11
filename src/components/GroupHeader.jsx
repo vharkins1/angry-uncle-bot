@@ -4,57 +4,38 @@ import '../app/globals.css';
 
 export default function GroupHeader({
   title = 'Angry Uncle Group Chat',
-  remaining = null,
+  turns_remaining = null,
+  total_remaining = null,
+  topic = null,
   onReset = () => {}
 }) {
   return (
-    <header
-      className="sticky top-0 z-20 mx-4 my-2 flex items-center justify-between gap-3
-                 rounded-full border bg-white/80 backdrop-blur p-4
-                 dark:bg-gray-800/80"
-    >
-      {/* avatar stack */}
-      <div className="relative h-8 w-8">
-        {/* Angry Uncle */}
-        <div
-          className="absolute inset-0 flex h-8 w-8 items-center justify-center
-                     rounded-full bg-red-200 text-base"
-        >
-          😠
+    <>
+    
+      {/* Header */}
+      <div
+        className="sticky top-0 -mt-3 z-35 mx-auto flex  max-w-[calc(100%-6.5rem)] sm:max-w-2xl items-center justify-between gap-4 rounded-b-lg bg-[rgba(255,255,255,0.08)] px-6 py-3 text-sm text-white shadow-lg shadow-black/30 backdrop-blur-md"
+      >
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-1">
+            <h2 className="text-m font-bold m-0">{topic ?? 'Pick a topic'}</h2>
+            <span className="text-sm text-white/80"> {turns_remaining} turns left</span>
+            <span className="text-sm text-white/80">| {total_remaining} total left</span>
+          </div>
+          <span className="block h-1 w-16 bg-[#dd494f] mt-1 rounded" />
         </div>
-
-        {/* Dr. T offset */}
-        <div
-          className="absolute left-5 top-0 flex h-8 w-8 items-center justify-center
-                     rounded-full bg-blue-200 text-base ring-2 ring-white
-                     dark:ring-gray-900"
-        >
-          🧑‍🏫
-        </div>
-      </div>
-
-      {/* title + counter */}
-      <div className="grow text-center leading-tight">
-        <h1 className="text font-semibold">{title}</h1>
-        <p className="text text-gray-500 dark:text-gray-400">
-          Dr. T, Angry Uncle &amp; You
-          {remaining !== null && (
-            <span className="ml-2 font-medium">· {remaining} messages left</span>
-          )}
-        </p>
-      </div>
-
-      {/* reset + menu */}
-      <div className="flex items-center gap-2">
         <button
-          onClick={onReset}
-          className="rounded-full p-2 text-3xl text-gray-600 hover:bg-gray-200
-             dark:text-gray-300 dark:hover:bg-gray-700"
-          title="Reset chat"
+          className="rounded-xl bg-[#fbb041] px-2 py-.5 text-lg font-bold text-black hover:brightness-90"
+          onClick={() => {
+            localStorage.removeItem('aub_chat');
+            localStorage.removeItem('aub_topic');
+            setMessages([]);
+            setTopic(null);
+          }}
         >
           ↺
         </button>
       </div>
-    </header>
+    </>
   );
 }
